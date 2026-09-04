@@ -6,4 +6,7 @@ __pycache__/
 .ruff_cache/
 evidence/
 evidence-bundle.zip
+submission-screenshots/
+submission-screenshots.zip
 readiness-report.json
+ports.local*
