@@ -34,7 +34,7 @@
       "fieldConfig": {"defaults": {}, "overrides": []},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
       "id": 4,
-      "targets": [{"expr": "lab28_consumer_lag", "legendFormat": "{{topic}}/{{partition}}"}],
+      "targets": [{"expr": "kafka_consumergroup_lag", "legendFormat": "{{consumergroup}} {{topic}}/{{partition}}"}],
       "title": "Pipeline saturation / lag",
       "type": "timeseries"
     }
