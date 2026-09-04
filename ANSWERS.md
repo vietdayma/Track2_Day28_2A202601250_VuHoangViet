@@ -80,11 +80,10 @@ Lệnh dùng khi demo: `docker compose --env-file ports.template stop feast` …
 
 ## 6. Reflection
 
-> *(Phần này bạn tự viết lại theo trải nghiệm thật của mình — dưới đây là gợi ý dựa trên quá trình làm.)*
-
-- **Khó nhất:** hiểu vì sao `dedupe_latest` phải so `(occurred_at, event_id)` chứ không chỉ `occurred_at` — chỉ vỡ ra khi đọc test `test_events_sharing_a_timestamp_resolve_deterministically` và nhận ra Kafka chỉ đảm bảo thứ tự *trong một partition*, không phải trong một batch.
-- **Bất ngờ:** `/ready` HTTP (`degraded`) và `lab28 ready` CLI (`not_ready`) cho kết quả khác nhau trên cùng một trạng thái — hoá ra là do `mandatory` của probe vLLM phụ thuộc config, và đó chính là minh hoạ sống cho phân biệt `ready`/`degraded`/`not_ready`.
-- **Sẽ cải tiến:** làm `/ready` probe song song có timeout riêng để load test không bị vLLM timeout kéo P50 lên 5s.
+- **Khó nhất:** hiểu vì sao `dedupe_latest` phải so `(occurred_at, event_id)` chứ không chỉ `occurred_at`. Chỉ vỡ ra khi đọc test `test_events_sharing_a_timestamp_resolve_deterministically`: hai bản ghi trùng timestamp phải cho cùng kết quả bất kể thứ tự nạp, vì Kafka chỉ đảm bảo thứ tự *trong một partition*, không phải trong một batch — so một tiêu chí là chưa đủ xác định.
+- **Bất ngờ nhất:** `/ready` (HTTP, chạy trong container) trả `degraded` còn `lab28 ready` (CLI, chạy trên host) trả `not_ready` cho **cùng một trạng thái hệ thống** — không phải bug, mà do cờ `mandatory` của probe vLLM đọc từ `LAB28_VLLM_REQUIRE_REAL` khác nhau giữa hai nơi chạy. Đây hoá ra lại là minh hoạ sống động nhất cho đúng thứ bài yêu cầu phân biệt: `ready`/`degraded`/`not_ready` không phải ba mức độ nghiêm trọng cố định, mà là quyết định nghiệp vụ (thành phần nào bắt buộc) áp lên cùng một tập probe.
+- **Trở ngại thực tế lớn nhất không nằm ở code** mà ở việc khởi động Docker Desktop trên Windows (daemon không tự chạy dù CLI đã cài) — nhắc lại cho tôi rằng "hệ thống chạy được trên máy tôi" và "engine đang chạy" là hai việc khác nhau, đúng tinh thần phân biệt `/health` (liveness) và `/ready` (readiness) mà bài dạy.
+- **Sẽ cải tiến nếu triển khai thật:** làm `/ready` probe các dependency song song với deadline riêng từng probe (thay vì tuần tự) — số liệu thật đo được là P50 5.3s / P99 8.6s cho một endpoint lẽ ra phải dưới 100ms, hoàn toàn do probe vLLM chờ hết timeout ~5s. Đây là bằng chứng rõ nhất cho việc "SUCCESS không có nghĩa là đủ nhanh".
 
 ---
 
