@@ -1,0 +1,15 @@
+{
+  "target": "http://localhost:8080/ready (Envoy gateway -> lab28-api)",
+  "requests": 200,
+  "workers": 8,
+  "status_counts": {
+    "200": 200
+  },
+  "latency_ms": {
+    "p50": 5354.12,
+    "p95": 6125.85,
+    "p99": 8624.86
+  },
+  "bottleneck": "The /ready handler probes every dependency synchronously on each call. The vLLM probe has no GPU endpoint in the local profile and only returns on its ~5s ReadTimeout, so that timeout is the P50 floor. All 200 responses are HTTP 200 because vLLM is a non-mandatory probe in the container profile (LAB28_VLLM_REQUIRE_REAL=false) -> status \"degraded\", pod stays in rotation.",
+  "fix": "Cache probe results with a short TTL (e.g. 2-5s) or run the probes concurrently with a per-probe deadline; drop the vLLM probe timeout to ~1s in the local profile."
+}

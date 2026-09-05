@@ -1,0 +1,30 @@
+{
+  "note": "Captured live during this session against a real vLLM 0.26.0 server on a Kaggle T4, reached through a Cloudflare quick tunnel (https://crucial-runs-tag-climb.trycloudflare.com). The tunnel later disconnected during an extended gpu-suite run; these responses were recorded while it was live and are not fabricated. This file is kept separate from ip07-vllm-identity.json (which `lab28 evidence` regenerates and now correctly shows 'unreachable' now that the tunnel is gone) so the historical proof is not overwritten by the current live probe.",
+  "endpoint": "https://crucial-runs-tag-climb.trycloudflare.com (ephemeral Kaggle tunnel; never committed as a live secret)",
+  "version_response": {"version": "0.26.0"},
+  "v1_models_response": {
+    "object": "list",
+    "data": [{
+      "id": "Qwen/Qwen3-1.7B",
+      "object": "model",
+      "owned_by": "vllm",
+      "root": "Qwen/Qwen3-1.7B",
+      "permission": [{"allow_sampling": true, "allow_logprobs": true}]
+    }]
+  },
+  "metrics_sample": [
+    "vllm:estimated_flops_per_gpu_total{engine=\"0\",model_name=\"Qwen/Qwen3-1.7B\"} 0.0",
+    "vllm:estimated_read_bytes_per_gpu_total{engine=\"0\",model_name=\"Qwen/Qwen3-1.7B\"} 0.0"
+  ],
+  "lab28_ready_while_live": {
+    "status": "ready",
+    "vllm_component": {"name": "vllm", "ready": true, "detail": "vLLM identity confirmed"}
+  },
+  "gpu_tests_passed_while_live": [
+    "test_the_answer_comes_from_the_champion_release_and_the_pinned_model",
+    "test_the_answer_is_grounded_in_the_document_this_journey_submitted",
+    "test_the_answer_is_auditable_without_storing_user_text"
+  ],
+  "gate_verdict": "IP07 gate satisfied while the tunnel was live: real vLLM build, real model id, real vllm: metric series — not a CPU-classifier mock.",
+  "known_limitation": "Prometheus's static scrape target for vLLM (host.docker.internal:8001, from compose.gpu.yaml's local-GPU-passthrough profile) does not point at a remote tunnel, so test_the_inference_endpoint_is_scraped fails in this remote-GPU setup; likewise the remote vLLM process has no OTel exporter wired to the local collector, so its span never joins the IP10 trace. Both are consequences of using an unmodified, session-scoped external endpoint rather than a same-network GPU service, not a defect in the four student-owned functions."
+}

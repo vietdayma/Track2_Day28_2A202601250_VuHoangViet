@@ -4,6 +4,8 @@
 
 **Nhánh nộp:** `main` của repo cá nhân `vietdayma/Track2_Day28_2A202601250_VuHoangViet`.
 
+**Bằng chứng đính kèm:** nộp bài chỉ qua link repo (không có kênh upload riêng), nên toàn bộ evidence JSON + ảnh chụp UI được commit thành bản sao tại [`submission/`](submission/README.md) — xem file đó để biết vì sao tách khỏi `evidence/` (bị `.gitignore` vì là output runtime).
+
 **Môi trường chạy:** Windows 11, Docker Desktop (WSL2), 12 CPU. Chạy `--profile full` (core + Spark Connect + Airflow). Không có GPU cục bộ → dùng **Kaggle T4 + vLLM 0.26.0 thật**, expose qua Cloudflare quick tunnel, theo `KAGGLE_GPU_EXTENSION.md`. Xem mục 2 (IP07) cho phạm vi đã verify trước khi tunnel ngắt.
 
 ---
@@ -27,16 +29,16 @@ Chạy `--profile full`, `lab28 seed --via-gateway`, `lab28 index --source file`
 
 | IP | Trạng thái | Bằng chứng |
 |---|---|---|
-| IP01 FastAPI→Kafka | ✅ | `evidence/ip01-kafka-consume.json` — message trên `data.raw`, header `idempotency-key` + `traceparent`, key = `entity_id` (giữ thứ tự theo asker), `trace_id` khớp trace do test sinh |
-| IP02 Kafka→Airflow | ✅ | `evidence/ip02-airflow-run.json` — DAG `lab28_ingestion_pipeline` state `success`, task states, asset event `lab28://delta/feedback` |
-| IP03 Airflow→Delta | ✅ | `evidence/ip03-delta-history.json` — `_delta_log`, MERGE history, time-travel diff. Hiện tại: `documents v6 (17 rows)`, `feedback v9 (10 rows)`. J2 chứng minh replay không tăng số dòng |
-| IP04 Delta→Feast | ✅ | `evidence/ip04-feast-online.json` — entity `asker_id` đọc được sau materialize, có `delta_version` và `freshness_seconds` |
-| IP05 Delta→Qdrant | ✅ | `evidence/ip05-qdrant-search.json` — collection `lab28_documents` 18 points, point ID = UUID xác định từ `doc_id` (re-index ghi đè, không nhân đôi), truy vấn hybrid có score |
-| IP06 Delta→MLflow | ✅ | `evidence/ip06-mlflow-release.json` — `lab28-rag-release v1` là `champion`, tags: prompt version, vllm model id, embedding model, collection, feature service, delta version. J3 chứng minh promote → rollback alias không sửa mã |
-| IP07 FastAPI→vLLM | ✅ verified once (session-scoped) | Chạy **vLLM 0.26.0 thật** trên Kaggle T4 (`Qwen/Qwen3-1.7B`), expose qua Cloudflare quick tunnel, trỏ `LAB28_VLLM_BASE_URL`/`LAB28_VLLM_REQUIRE_REAL=true` vào đó. Trong lúc tunnel còn sống: `/version` → real vLLM build, `/v1/models` → đúng model id, `/metrics` có series `vllm:` thật (không phải mock), `lab28 ready` → `status: "ready"`, và 3 test `@pytest.mark.gpu` của J1 (champion+model đúng, có grounding, có audit) đều pass. Bằng chứng thô lưu ở `evidence/ip07-vllm-identity.json`. Tunnel là notebook Kaggle cá nhân, **hết phiên sau đó** (tunnel chết khi một lần chạy suite gpu kéo dài) nên không còn sống liên tục để CI/scan tự động lại được — đây là giới hạn cố hữu của "mượn GPU rời qua tunnel tạm", không phải làm giả kết quả: mọi phản hồi trên đều capture trực tiếp trong lúc endpoint thật đang chạy. Không hard-code URL tunnel/token vào repo (dùng `ports.local.gpu`, đã gitignore) |
-| IP08 Client→Envoy→API | ✅ | `evidence/ip08-gateway.json` — cùng route: 10×200 + 20×429 (local rate limit 10 rps), mỗi phản hồi có `x-request-id` |
-| IP09 →Prometheus/Grafana | ✅ | `evidence/ip09-prometheus-targets.json` (mọi job `up`, alert rules nạp) + `evidence/ip09-grafana-dashboards.json` (dashboard provisioned) |
-| IP10 →OTel/Jaeger | ✅ (leg cục bộ) | `evidence/ip10-trace.json` — 1 trace ID đi xuyên `gateway.request → api.ingest → kafka.produce → kafka.consume → airflow.dag → spark.delta_merge` (6/6 span bắt buộc của luồng ingestion). Các span của luồng `ask` (feast/qdrant/mlflow/vllm) thuộc phần GPU-gated. Leg LangSmith: UNVERIFIED (không có `LANGSMITH_API_KEY`) |
+| IP01 FastAPI→Kafka | ✅ | `submission/proof/ip01-kafka-consume.json` — message trên `data.raw`, header `idempotency-key` + `traceparent`, key = `entity_id` (giữ thứ tự theo asker), `trace_id` khớp trace do test sinh |
+| IP02 Kafka→Airflow | ✅ | `submission/proof/ip02-airflow-run.json` — DAG `lab28_ingestion_pipeline` state `success`, task states, asset event `lab28://delta/feedback` |
+| IP03 Airflow→Delta | ✅ | `submission/proof/ip03-delta-history.json` — `_delta_log`, MERGE history, time-travel diff. Hiện tại: `documents v6 (17 rows)`, `feedback v9 (10 rows)`. J2 chứng minh replay không tăng số dòng |
+| IP04 Delta→Feast | ✅ | `submission/proof/ip04-feast-online.json` — entity `asker_id` đọc được sau materialize, có `delta_version` và `freshness_seconds` |
+| IP05 Delta→Qdrant | ✅ | `submission/proof/ip05-qdrant-search.json` — collection `lab28_documents` 18 points, point ID = UUID xác định từ `doc_id` (re-index ghi đè, không nhân đôi), truy vấn hybrid có score |
+| IP06 Delta→MLflow | ✅ | `submission/proof/ip06-mlflow-release.json` — `lab28-rag-release v1` là `champion`, tags: prompt version, vllm model id, embedding model, collection, feature service, delta version. J3 chứng minh promote → rollback alias không sửa mã |
+| IP07 FastAPI→vLLM | ✅ verified once (session-scoped) | Chạy **vLLM 0.26.0 thật** trên Kaggle T4 (`Qwen/Qwen3-1.7B`), expose qua Cloudflare quick tunnel, trỏ `LAB28_VLLM_BASE_URL`/`LAB28_VLLM_REQUIRE_REAL=true` vào đó. Trong lúc tunnel còn sống: `/version` → real vLLM build, `/v1/models` → đúng model id, `/metrics` có series `vllm:` thật (không phải mock), `lab28 ready` → `status: "ready"`, và 3 test `@pytest.mark.gpu` của J1 (champion+model đúng, có grounding, có audit) đều pass. Bằng chứng thô lưu ở `submission/proof/ip07-vllm-identity-verified-live.json` (file `ip07-vllm-identity.json` cạnh đó phản ánh trạng thái *hiện tại*, sau khi tunnel đã ngắt — đúng thực tế, không bị ghi đè lên bằng chứng cũ). Tunnel là notebook Kaggle cá nhân, **hết phiên sau đó** (tunnel chết khi một lần chạy suite gpu kéo dài) nên không còn sống liên tục để CI/scan tự động lại được — đây là giới hạn cố hữu của "mượn GPU rời qua tunnel tạm", không phải làm giả kết quả: mọi phản hồi trên đều capture trực tiếp trong lúc endpoint thật đang chạy. Không hard-code URL tunnel/token vào repo (dùng `ports.local.gpu`, đã gitignore) |
+| IP08 Client→Envoy→API | ✅ | `submission/proof/ip08-gateway.json` — cùng route: 10×200 + 20×429 (local rate limit 10 rps), mỗi phản hồi có `x-request-id` |
+| IP09 →Prometheus/Grafana | ✅ | `submission/proof/ip09-prometheus-targets.json` (mọi job `up`, alert rules nạp) + `submission/proof/ip09-grafana-dashboards.json` (dashboard provisioned) |
+| IP10 →OTel/Jaeger | ✅ (leg cục bộ) | `submission/proof/ip10-trace.json` — 1 trace ID đi xuyên `gateway.request → api.ingest → kafka.produce → kafka.consume → airflow.dag → spark.delta_merge` (6/6 span bắt buộc của luồng ingestion). Các span của luồng `ask` (feast/qdrant/mlflow/vllm) thuộc phần GPU-gated. Leg LangSmith: UNVERIFIED (không có `LANGSMITH_API_KEY`) |
 
 `lab28 integration` (probe trực tiếp từ serving process, chỉ IP01/03/04/05/06/07): **score 83 khi không có GPU** (5/6 verified pass); **6/6 = 100 trong lúc tunnel Kaggle còn sống** (đã xác nhận qua `lab28 ready` → `ready`). IP02/08/09/10 để `unverified` ở lệnh `lab28 integration` **theo thiết kế** — chúng được chứng minh bằng file evidence + integration test, không phải bằng probe nội bộ.
 
@@ -49,6 +51,10 @@ Chạy 15 test `@pytest.mark.gpu` với vLLM thật: **12 passed, 3 failed** tr�
 3. **`test_the_trace_spans_the_processes_the_contract_claims` (IP10)** — trace chỉ thấy 3 service (`gateway`, `api`, `airflow`) thay vì ≥4, vì vLLM chạy trên Kaggle không có OTel exporter trỏ về `otel-collector` cục bộ. Cùng nguyên nhân gốc với gap #2: vLLM nằm ngoài docker network/observability stack của bài.
 
 Gap #1 đã sửa và verify. Gap #2, #3 là hệ quả kiến trúc của việc dùng GPU mượn qua tunnel thay vì GPU cắm cùng mạng — ghi nhận trung thực thay vì che giấu hoặc giả lập.
+
+### Ảnh chụp UI (song song với evidence JSON)
+
+[`submission/screenshots/`](submission/screenshots/): `01-grafana-dashboard.png` (IP09, gồm panel lag đã sửa ở gap #đã nêu), `02-jaeger-trace.png` (IP10, trace `ce33210870164191b3fa2be2d41dfca0`), `03-mlflow-champion.png` (IP06), `04-qdrant-collection.png` (IP05), `05-airflow-dag.png` (IP02), `06-prometheus-targets.png` (IP09).
 
 ---
 
@@ -82,7 +88,7 @@ Lệnh dùng khi demo: `docker compose --env-file ports.template stop feast` …
 - **IP07 chỉ verify một lần, không liên tục** — vLLM thật chạy trên notebook Kaggle cá nhân qua tunnel tạm; production cần một endpoint vLLM cố định (cluster GPU riêng hoặc managed inference), không phụ thuộc phiên notebook.
 - **Prometheus/Jaeger không phủ được vLLM khi nó nằm ngoài mạng Docker** (xem mục 2, gap #2 và #3) — production cần vLLM cùng subnet/VPC với observability stack, có OTel exporter riêng.
 - **LangSmith leg** — chỉ có OTLP backend cục bộ; production cần `LANGSMITH_API_KEY`.
-- `/ready` **probe đồng bộ mỗi request** → P50 ~5.3s khi vLLM không phản hồi kịp (xem `evidence/load-profile.json`, đo lúc chưa nối GPU). Production: cache kết quả probe với TTL ngắn, hoặc probe song song có deadline.
+- `/ready` **probe đồng bộ mỗi request** → P50 ~5.3s khi vLLM không phản hồi kịp (xem `submission/proof/load-profile.json`, đo lúc chưa nối GPU). Production: cache kết quả probe với TTL ngắn, hoặc probe song song có deadline.
 - **1 replica cho mỗi service, replication_factor=1** cho Kafka — không chịu lỗi node. Envoy vốn có `healthy_panic_threshold` mặc định 50% với 1 upstream (đã tắt trong repo, `value: 0`) và giờ có thêm `outlier_detection` — nhưng với cụm thật nhiều node cần đánh giá lại ngưỡng này, không dùng nguyên cấu hình single-host.
 - **Bí mật** hiện qua biến môi trường Compose; production cần secret manager + rotation.
 - Airflow/Spark chạy 1 worker; chưa có autoscaling, chưa có backpressure khi Kafka lag tăng.
