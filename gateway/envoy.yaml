@@ -80,6 +80,15 @@ static_resources:
           http_health_check: {path: /health}
       common_lb_config:
         healthy_panic_threshold: {value: 0}
+      # Active checks only prove liveness (see above), so a not-ready pod stays
+      # in rotation until passive outlier detection notices its own responses:
+      # repeated 5xx on /ready trips ejection, and only then does Envoy answer
+      # with its own error instead of proxying the app's JSON breakdown.
+      outlier_detection:
+        consecutive_5xx: 3
+        interval: 2s
+        base_ejection_time: 10s
+        max_ejection_percent: 100
     - name: otel_collector
       type: STRICT_DNS
       connect_timeout: 2s
